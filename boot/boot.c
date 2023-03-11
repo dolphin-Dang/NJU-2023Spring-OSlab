@@ -9,6 +9,7 @@ void load_kernel() {
   while (1) ;
   */
   // remove both lines above before write codes below
+  //test
   Elf32_Ehdr *elf = (void *)0x8000;
   copy_from_disk(elf, 255 * SECTSIZE, SECTSIZE);
   Elf32_Phdr *ph, *eph;
