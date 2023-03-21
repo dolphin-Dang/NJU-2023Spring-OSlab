@@ -4,6 +4,13 @@
 
 static TSS32 tss;
 
+typedef union free_page {
+  union free_page *next;
+  char buf[PGSIZE];
+} page_t;
+
+page_t *free_page_list;
+
 void init_gdt() {
   static SegDesc gdt[NR_SEG];
   gdt[SEG_KCODE] = SEG32(STA_X | STA_R,   0,     0xffffffff, DPL_KERN);
@@ -31,34 +38,83 @@ void init_page() {
   static_assert(sizeof(PT) == PGSIZE, "PT must be one page");
   static_assert(sizeof(PD) == PGSIZE, "PD must be one page");
   // Lab1-4: init kpd and kpt, identity mapping of [0 (or 4096), PHY_MEM)
-  TODO();
+  //TODO();
+  memset(&kpd, 0, sizeof(kpd));
+  for(int i = 0; i < PHY_MEM / PT_SIZE; i++){
+    kpd.pde[i].val = MAKE_PDE(kpt + i, 1);
+    for(int j = 0; j < NR_PTE; j++){
+      kpt[i].pte[j].val = MAKE_PTE((i << DIR_SHIFT) | (j << TBL_SHIFT), 1);
+    }
+  }
+
   kpt[0].pte[0].val = 0;
   set_cr3(&kpd);
   set_cr0(get_cr0() | CR0_PG);
   // Lab1-4: init free memory at [KER_MEM, PHY_MEM), a heap for kernel
-  TODO();
+  //TODO();
+  int addrPointer = PAGE_DOWN(KER_MEM);
+  page_t *listPointer = free_page_list;
+  while(addrPointer < PHY_MEM){
+    listPointer->next = addrPointer;
+    addrPointer += PGSIZE;
+    listPointer = listPointer->next;
+  }
+  listPointer->next = NULL; //end of the free_page_list
 }
 
 void *kalloc() {
   // Lab1-4: alloc a page from kernel heap, abort when heap empty
-  TODO();
+  //TODO();
+  if(free_page_list->next == NULL) assert(0);
+  int ret = free_page_list->next;
+  free_page_list->next = free_page_list->next->next;
+  return (void *)ret;
 }
 
 void kfree(void *ptr) {
   // Lab1-4: free a page to kernel heap
   // you can just do nothing :)
   //TODO();
+  if((int)ptr >= KER_MEM && ptr < PHY_MEM){
+    memset(ptr, 0, PGSIZE);
+    page_t *temp = free_page_list->next;
+    free_page_list->next = ptr;
+    free_page_list->next->next = temp;
+  }
 }
 
 PD *vm_alloc() {
   // Lab1-4: alloc a new pgdir, map memory under PHY_MEM identityly
-  TODO();
+  //TODO();
+  PD *pgdir = kalloc();
+  // an unused pde is set all 0
+  memset((void *)pgdir, 0, PGSIZE);
+  for(int i = 0; i < PHY_MEM / PT_SIZE; i++){
+    pgdir->pde[i].val = MAKE_PDE(pgdir + i, 1);
+    // for(int j = 0; j < NR_PTE; j++){
+    //   kpt[i].pte[j].val = MAKE_PTE((i << DIR_SHIFT) | (j << TBL_SHIFT), 1);
+    // }
+  }
+  return pgdir;
 }
 
 void vm_teardown(PD *pgdir) {
   // Lab1-4: free all pages mapping above PHY_MEM in pgdir, then free itself
   // you can just do nothing :)
   //TODO();
+  for(int i = PHY_MEM / PT_SIZE;i < NR_PDE; i++){
+    // an all 0 pde is unused so there's no need to kfree it
+    if(pgdir->pde[i].val == 0) break;
+    else{
+      PDE *pde = (PDE *)pgdir->pde[i].val;
+      PT *pt = (PT *)PDE2PT(*pde); // pa of PT
+      for(int j = 0; j < NR_PTE; j++){
+        kfree(PTE2PG(pt->pte[j]));  //kfree all the PHY page
+      }
+      kfree((void *)pt); //kfree the PT of this PDE
+    }
+  }
+  kfree(pgdir);
 }
 
 PD *vm_curr() {

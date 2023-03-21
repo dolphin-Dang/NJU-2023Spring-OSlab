@@ -14,7 +14,7 @@ int main() {
   init_gdt();
   init_serial();
   init_fs();
-  //init_page(); // uncomment me at Lab1-4
+  init_page(); // uncomment me at Lab1-4
   //init_cte(); // uncomment me at Lab1-5
   //init_timer(); // uncomment me at Lab1-7
   //init_proc(); // uncomment me at Lab2-1
