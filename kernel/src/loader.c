@@ -20,13 +20,25 @@ uint32_t load_elf(PD *pgdir, const char *name) {
     iread(inode, elf.e_phoff + i * sizeof(ph), &ph, sizeof(ph));
     if (ph.p_type == PT_LOAD) {
       // Lab1-2: Load segment to physical memory
-      iread(inode, ph.p_offset, (void *)(ph.p_paddr), ph.p_filesz);
-      memset((void *)(ph.p_paddr + ph.p_filesz), 0,ph.p_memsz - ph.p_filesz);
       // Lab1-4: Load segment to virtual memory
       //TODO();
+      PD *temp = vm_curr(); //save the pgdir now
+      set_cr3(pgdir);
+      int prot;
+      if((ph.p_flags & PF_W) != 0){
+        prot = 7;
+      }else{
+        prot = 5;
+      }
+      vm_map(pgdir, ph.p_vaddr, ph.p_memsz, prot);
+
+      iread(inode, ph.p_offset, (void *)(ph.p_paddr), ph.p_filesz);
+      memset((void *)(ph.p_paddr + ph.p_filesz), 0,ph.p_memsz - ph.p_filesz);
+      set_cr3(temp);
     }
   }
   // TODO: Lab1-4 alloc stack memory in pgdir
+  vm_map(pgdir, USR_MEM - PGSIZE, PGSIZE, 7);
   iclose(inode);
   return elf.e_entry;
 }
