@@ -31,11 +31,21 @@ void init_user_and_go() {
   // Lab1-8: argv
   // Lab2-1: proc
   // Lab3-2: add cwd
+  
   PD *pgdir = vm_alloc();
   Context ctx;
   char *argv[] = {"sh1", NULL};
+  //char *argv[] = {"echo", "hello", "world", NULL};
   assert(load_user(pgdir, &ctx, "sh1", argv) == 0);
   set_cr3(pgdir);
   set_tss(KSEL(SEG_KDATA), (uint32_t)kalloc() + PGSIZE);
   irq_iret(&ctx);
+  
+  /*
+  PD *pgdir = vm_alloc();
+  uint32_t eip = load_elf(pgdir, "brktest");
+  assert(eip != -1);
+  set_cr3(pgdir);
+  stack_switch_call((void*)(USR_MEM - 16), (void*)eip, 0);
+  */
 }

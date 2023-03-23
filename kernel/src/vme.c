@@ -42,9 +42,9 @@ void init_page() {
   //printf("start init kpd and kpt\n");
   memset(&kpd, 0, sizeof(kpd));
   for(int i = 0; i < PHY_MEM / PT_SIZE; i++){
-    kpd.pde[i].val = MAKE_PDE(kpt + i, 1);
+    kpd.pde[i].val = MAKE_PDE(kpt + i, 7);
     for(int j = 0; j < NR_PTE; j++){
-      kpt[i].pte[j].val = MAKE_PTE((i << DIR_SHIFT) | (j << TBL_SHIFT), 1);
+      kpt[i].pte[j].val = MAKE_PTE((i << DIR_SHIFT) | (j << TBL_SHIFT), 7);
     }
   }
   //printf("end init kpd and kpt\n");
@@ -104,7 +104,7 @@ PD *vm_alloc() {
   // an unused pde is set all 0
   memset((void *)pgdir, 0, PGSIZE);
   for(int i = 0; i < PHY_MEM / PT_SIZE; i++){
-    pgdir->pde[i].val = MAKE_PDE(kpt + i, 1);
+    pgdir->pde[i].val = MAKE_PDE(kpt + i, 7);
     // for(int j = 0; j < NR_PTE; j++){
     //   kpt[i].pte[j].val = MAKE_PTE((i << DIR_SHIFT) | (j << TBL_SHIFT), 1);
     // }
@@ -117,13 +117,14 @@ void vm_teardown(PD *pgdir) {
   // Lab1-4: free all pages mapping above PHY_MEM in pgdir, then free itself
   // you can just do nothing :)
   //TODO();
-  for(int i = PHY_MEM / PT_SIZE;i < NR_PDE; i++){
+  for(int i = PHY_MEM / PT_SIZE; i < NR_PDE; i++){
     // an all 0 pde is unused so there's no need to kfree it
-    if(pgdir->pde[i].val == 0) break;
-    else{
-      PDE *pde = (PDE *)pgdir->pde[i].val;
+    if(pgdir->pde[i].present != 0){
+      PDE *pde = &pgdir->pde[i];
+      //printf("%d %d\n", pgdir->pde[i], (*pde));
       PT *pt = (PT *)PDE2PT(*pde); // pa of PT
       for(int j = 0; j < NR_PTE; j++){
+        if(pt->pte[j].present == 0) continue;
         kfree(PTE2PG(pt->pte[j]));  //kfree all the PHY page
       }
       kfree((void *)pt); //kfree the PT of this PDE
@@ -155,7 +156,7 @@ PTE *vm_walkpte(PD *pgdir, size_t va, int prot) {
       //printf("vm_walkpte\n");
       PT *pt = kalloc();
       memset(pt, 0, PGSIZE);
-      pde->val = MAKE_PDE(pt, prot);
+      pde->val = MAKE_PDE(pt, 7);
       int pt_index = ADDR2TBL(va);
       PTE *pte = &(pt->pte[pt_index]);
       return pte;
@@ -196,7 +197,7 @@ void vm_map(PD *pgdir, size_t va, size_t len, int prot) {
       pte->val = pte->val | prot;
     }else{
       page_t *pg = kalloc();
-      pte->val = MAKE_PTE(pg, prot);
+      pte->val = MAKE_PTE(pg, 7);
     }
   }
 }

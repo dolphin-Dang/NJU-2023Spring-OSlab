@@ -75,7 +75,7 @@ void sys_sleep(int ticks) {
 
 int sys_exec(const char *path, char *const argv[]) {
   //TODO(); // Lab1-8, Lab2-1
-    printf("here\n");
+    //printf("here\n");
   PD *pgdir = vm_alloc();
   Context ctx;
   int ret = load_user(pgdir, &ctx, path, argv);

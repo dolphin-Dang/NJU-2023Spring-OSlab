@@ -10,8 +10,8 @@ int main() {
   int argc;
   char *argv[MAX_ARGS_NUM+1];
   for (;;) {
-    printf("here in sh1\n");
     printf("$ ");
+    //printf("here in sh1\n");
     getline(args, ARGS_BUF_LEN);
     argc = 0;
     for (char *c = strtok(args, " \t\n"); c; c = strtok(NULL, " \t\n")) {

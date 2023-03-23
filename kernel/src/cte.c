@@ -106,6 +106,7 @@ void irq_handle(Context *ctx) {
     // just ignore me now, usage is in Lab1-6
     exception_debug_handler(ctx);
   }
+  //printf("ctx->irq:%d\n", ctx->irq);
   switch (ctx->irq) {
   // TODO: Lab1-5 handle pagefault and syscall
   case EX_PF:
