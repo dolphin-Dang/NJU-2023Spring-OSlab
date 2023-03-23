@@ -52,6 +52,10 @@ grade:
 submit:
 	python3 ok --config okconfig/$(STAGE).ok --submit
 
+pack:
+	mkdir -p build/submit
+	python3 ok --config okconfig/$(STAGE).ok --pack build/submit
+
 # Bootloader
 
 BOOT_CSRCS := $(shell find boot -name "*.c")
