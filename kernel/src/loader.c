@@ -53,7 +53,10 @@ uint32_t load_arg(PD *pgdir, char *const argv[]) {
   for (argc = 0; argv[argc]; ++argc) {
     assert(argc < MAX_ARGS_NUM);
     // push the string of argv[argc] to stack, record its va to argv_va[argc]
-    TODO();
+    //TODO();
+    stack_top -= (strlen(argv[argc]) + 1);
+    strcpy(stack_top, argv[argc]);
+    argv_va[argc] = USR_MEM - PGSIZE + ADDR2OFF(stack_top);
   }
   argv_va[argc] = 0; // set last argv NULL
   stack_top -= ADDR2OFF(stack_top) % 4; // align to 4 bytes
@@ -63,7 +66,11 @@ uint32_t load_arg(PD *pgdir, char *const argv[]) {
     *(size_t*)stack_top = argv_va[i];
   }
   // push the address of the argv array as argument for _start
-  TODO();
+  //TODO();
+  size_t va = USR_MEM - PGSIZE + ADDR2OFF(stack_top);
+  stack_top -= sizeof(size_t);
+  *(size_t*)stack_top = va;
+
   // push argc as argument for _start
   stack_top -= sizeof(size_t);
   *(size_t*)stack_top = argc;
@@ -78,6 +85,8 @@ int load_user(PD *pgdir, Context *ctx, const char *name, char *const argv[]) {
   ctx->ds = USEL(SEG_UDATA);
   ctx->eip = eip;
   // TODO: Lab1-6 init ctx->ss and esp
-  ctx->eflags = 0x002; // TODO: Lab1-7 change me to 0x202
+  ctx->ss = USEL(SEG_UDATA);
+  ctx->esp = load_arg(pgdir, argv);
+  ctx->eflags = 0x202; // TODO: Lab1-7 change me to 0x202
   return 0;
 }

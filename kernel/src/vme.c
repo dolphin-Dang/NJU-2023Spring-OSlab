@@ -209,14 +209,22 @@ void vm_unmap(PD *pgdir, size_t va, size_t len) {
   //TODO();
   for(size_t addr = PAGE_DOWN(va); addr < PAGE_UP(va + len); addr += PGSIZE){
     //find pte
+    //PTE *pte = vm_walkpte(pgdir, addr, 7);
+    
     int pd_index = ADDR2DIR(addr);
     PDE *pde = &(pgdir->pde[pd_index]);
     PT *pt = PDE2PT(*pde);
     int pt_index = ADDR2TBL(addr);
     PTE *pte = &(pt->pte[pt_index]);
+    
     //unmap
-    page_t *pg = PTE2PG(*pte);
-    kfree(pg);
+    if(pte->present != 0){
+      page_t *pg = PTE2PG(*pte);
+      kfree(pg);
+    }
+  }
+  if(pgdir == vm_curr()){
+    set_cr3(vm_curr());
   }
 }
 

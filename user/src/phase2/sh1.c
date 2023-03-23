@@ -10,6 +10,7 @@ int main() {
   int argc;
   char *argv[MAX_ARGS_NUM+1];
   for (;;) {
+    printf("here in sh1\n");
     printf("$ ");
     getline(args, ARGS_BUF_LEN);
     argc = 0;
