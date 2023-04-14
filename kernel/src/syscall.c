@@ -41,14 +41,15 @@ int sys_read(int fd, void *buf, size_t count) {
 
 int sys_brk(void *addr) {
   // TODO: Lab1-5
-  static size_t brk = 0; // use brk of proc instead of this in Lab2-1
+  //static size_t brk = 0; // use brk of proc instead of this in Lab2-1
+  size_t brk = proc_curr()->brk;  //lab2-1
   size_t new_brk = PAGE_UP(addr);
   if (brk == 0) {
-    brk = new_brk;
+    proc_curr()->brk = new_brk;
   } else if (new_brk > brk) {
     //TODO();
     vm_map(vm_curr(), brk, new_brk - brk, 7);
-    brk = new_brk;
+    proc_curr()->brk = new_brk;
   } else if (new_brk < brk) {
     // can just do nothing
     /*
@@ -66,7 +67,8 @@ void sys_sleep(int ticks) {
   while (true) {
     uint32_t tick_now = get_tick();
     if(tick_now - tick_start < ticks){
-      sti(); hlt(); cli();
+      //sti(); hlt(); cli();
+      proc_yield();
     }else{
       break;
     }
@@ -86,12 +88,14 @@ int sys_exec(const char *path, char *const argv[]) {
     PD *pgdir_save = vm_curr();
     set_cr3(pgdir);
     vm_teardown(pgdir_save);
+    proc_curr()->pgdir = pgdir; //lab2-1
     irq_iret(&ctx);
   }
 }
 
 int sys_getpid() {
-  TODO(); // Lab2-1
+  //TODO(); // Lab2-1
+  return proc_curr()->pid;
 }
 
 void sys_yield() {
@@ -99,15 +103,43 @@ void sys_yield() {
 }
 
 int sys_fork() {
-  TODO(); // Lab2-2
+  //TODO(); // Lab2-2
+  proc_t* childPCB = proc_alloc();
+  if(childPCB == NULL) return -1;
+
+  proc_copycurr(childPCB);
+  proc_addready(childPCB);
+  return childPCB->pid;
 }
 
 void sys_exit(int status) {
-  TODO(); // Lab2-3
+  //TODO(); // Lab2-3
+  // while(1) proc_yield();
+  //printf("PID:%d parent:%d become ZOMBIE\n", proc_curr()->pid, proc_curr()->parent->pid);
+  proc_makezombie(proc_curr(), status);
+  INT(0x81);
 }
 
 int sys_wait(int *status) {
-  TODO(); // Lab2-3, Lab2-4
+  //TODO(); // Lab2-3, Lab2-4
+  //sys_sleep(250);
+  // return 0;
+
+  proc_t* proc = proc_curr();
+  if(proc->child_num == 0) return -1;
+
+  proc_t* child = proc_findzombie(proc);
+  while(child == NULL) {
+    proc_yield();
+    child = proc_findzombie(proc);
+    //printf("in while child == NULL, num = %d, PID:%d\n", proc->child_num, proc->pid);
+  }
+  if(status != NULL) *status = child->exit_code;
+  int pid = child->pid;
+  //printf("here in sys_wait\n");
+  proc_free(child);
+  proc->child_num--;
+  return pid;
 }
 
 int sys_sem_open(int value) {
