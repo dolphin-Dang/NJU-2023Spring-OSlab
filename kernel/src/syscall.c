@@ -127,13 +127,16 @@ int sys_wait(int *status) {
 
   proc_t* proc = proc_curr();
   if(proc->child_num == 0) return -1;
-
+  /*
   proc_t* child = proc_findzombie(proc);
   while(child == NULL) {
     proc_yield();
     child = proc_findzombie(proc);
     //printf("in while child == NULL, num = %d, PID:%d\n", proc->child_num, proc->pid);
   }
+  */
+  sem_p(&(proc->zombie_sem));
+  proc_t* child = proc_findzombie(proc);
   if(status != NULL) *status = child->exit_code;
   int pid = child->pid;
   //printf("here in sys_wait\n");
@@ -143,19 +146,46 @@ int sys_wait(int *status) {
 }
 
 int sys_sem_open(int value) {
-  TODO(); // Lab2-5
+  //TODO(); // Lab2-5
+  proc_t *procNow = proc_curr();
+  int id = proc_allocusem(procNow);
+  if(id == -1) return id;
+  usem_t *usem = usem_alloc(value);
+  if(usem == NULL) return -1;
+
+  procNow->usems[id] = usem;
+  return id;
 }
 
 int sys_sem_p(int sem_id) {
-  TODO(); // Lab2-5
+  //TODO(); // Lab2-5
+  proc_t *procNow = proc_curr();
+  usem_t *usem = proc_getusem(procNow, sem_id);
+  if(usem == NULL) return -1;
+
+  sem_p(&(usem->sem));
+  return 0;
 }
 
 int sys_sem_v(int sem_id) {
-  TODO(); // Lab2-5
+  //TODO(); // Lab2-5
+  proc_t *procNow = proc_curr();
+  usem_t *usem = proc_getusem(procNow, sem_id);
+  if(usem == NULL) return -1;
+
+  sem_v(&(usem->sem));
+  return 0;
 }
 
 int sys_sem_close(int sem_id) {
-  TODO(); // Lab2-5
+  //TODO(); // Lab2-5
+  proc_t *procNow = proc_curr();
+  usem_t *usem = proc_getusem(procNow, sem_id);
+  if(usem == NULL) return -1;
+
+  usem_close(usem);
+  procNow->usems[sem_id] = NULL;
+  return 0;
 }
 
 int sys_open(const char *path, int mode) {
