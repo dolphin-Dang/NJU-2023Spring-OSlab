@@ -28,16 +28,28 @@ file_t *fopen(const char *path, int mode) {
   //       if file not exist and type!=TYPE_NONE, create the file as type
   // you can ignore this in Lab3-1
   int open_type = 114514;
+  if(mode & O_CREATE){
+    if(mode & O_DIR) open_type = TYPE_DIR;
+    else open_type = TYPE_FILE;
+  }else{
+    open_type = TYPE_NONE;
+  }
   ip = iopen(path, open_type);
   if (!ip) goto bad;
   int type = itype(ip);
   if (type == TYPE_FILE || type == TYPE_DIR) {
     // TODO: Lab3-2, if type is not DIR, go bad if mode&O_DIR
-
+    if(type != TYPE_DIR && mode&O_DIR){
+      goto bad;
+    }
     // TODO: Lab3-2, if type is DIR, go bad if mode WRITE or TRUNC
-
+    if(type == TYPE_DIR && (mode&O_WRONLY || mode&O_TRUNC || mode&O_RDWR)){
+      goto bad;
+    }
     // TODO: Lab3-2, if mode&O_TRUNC, trunc the file
-
+    if(mode&O_TRUNC){
+      itrunc(ip);
+    }
     fp->type = TYPE_FILE; // file_t don't and needn't distingush between file and dir
     fp->inode = ip;
     fp->offset = 0;
@@ -63,7 +75,7 @@ int fread(file_t *file, void *buf, uint32_t size) {
   //TODO();
   //printf("here in fread\n");
   int offadd = -1;
-  if(file->type == TYPE_FILE || file->type == TYPE_DIR){
+  if(file->type == TYPE_FILE){
     offadd = iread(file->inode, file->offset, buf, size);
     if(offadd != -1) file->offset += offadd;
   }else if(file->type == TYPE_DEV){

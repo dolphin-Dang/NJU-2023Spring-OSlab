@@ -100,7 +100,7 @@ char getchar() {
   // TODO: Lab2-4 rewrite getchar with sem, P(sem) then pop_front
   sem_p(&serial_sem);
   ch = pop_front();
-  assert(ch != 0);
+  assert(ch);
   return ch;
 }
 

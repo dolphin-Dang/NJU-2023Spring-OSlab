@@ -131,5 +131,6 @@ void irq_handle(Context *ctx) {
     break;
   default: assert(ctx->irq >= T_IRQ0 && ctx->irq < T_IRQ0 + NR_INTR);
   }
+  //printf("ctx:%x\n", ctx);
   irq_iret(ctx);
 }

@@ -16,6 +16,7 @@ void init_proc() {
   // Lab2-4, init zombie_sem
   sem_init(&pcb[0].zombie_sem, 0);
   // Lab3-2, set cwd
+  pcb[0].cwd = iopen("/", TYPE_NONE);
 }
 
 proc_t *proc_alloc() {
@@ -32,6 +33,7 @@ proc_t *proc_alloc() {
       pcb[i].ctx = &(pcb[i].kstack->ctx);
       pcb[i].parent = NULL;
       pcb[i].child_num = 0;
+      pcb[i].cwd = NULL;
       sem_init(&pcb[i].zombie_sem, 0);
       for(int j = 0; j < MAX_USEM; j++){
         pcb[i].usems[j] = NULL;
@@ -106,6 +108,7 @@ void proc_copycurr(proc_t *proc) {
   }
   // Lab3-2: dup cwd
   //TODO();
+  proc->cwd = idup(procNow->cwd);
 }
 
 void proc_makezombie(proc_t *proc, int exitcode) {
@@ -135,6 +138,7 @@ void proc_makezombie(proc_t *proc, int exitcode) {
   }
   // Lab3-2: close cwd
   //TODO();
+  iclose(proc->cwd);
 }
 
 proc_t *proc_findzombie(proc_t *proc) {

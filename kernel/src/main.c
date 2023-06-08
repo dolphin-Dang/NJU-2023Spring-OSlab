@@ -51,6 +51,7 @@ void init_user_and_go() {
   // Lab2-1: proc
 
   proc_t *proc = proc_alloc();
+  proc->cwd = iopen("/", TYPE_NONE);
   assert(proc);
   char *argv[] = {"sh", NULL};
   assert(load_user(proc->pgdir, proc->ctx, "sh", argv) == 0);

@@ -166,12 +166,30 @@ blk_t *iwalk(dinode_t *file, uint32_t blk_no) {
   // return the pointer to the file's data's blk_no th block, if no, alloc it
   if (blk_no < NDIRECT) {
     // direct address
-    TODO();
+    // TODO();
+    uint32_t addr = file->addrs[blk_no];
+    if(addr == 0){
+      addr = balloc();
+      file->addrs[blk_no] = addr;
+    }
+    return bget(addr);
   }
   blk_no -= NDIRECT;
   if (blk_no < NINDIRECT) {
     // indirect address
-    TODO();
+    // TODO();
+    uint32_t addr = file->addrs[NDIRECT];
+    if(addr == 0){
+      addr = balloc();
+      file->addrs[NDIRECT] = addr;
+    }
+    blk_t* blk = bget(addr);
+    addr = blk->u32buf[blk_no];
+    if(addr == 0){
+      addr = balloc();
+      blk->u32buf[blk_no] = addr;
+    }
+    return bget(addr);
   }
   panic("file too big");
 }
@@ -179,10 +197,39 @@ blk_t *iwalk(dinode_t *file, uint32_t blk_no) {
 void iappend(dinode_t *file, const void *buf, uint32_t size) {
   // append buf to file's data, remember to add file->size
   // you can append block by block
-  TODO();
+  // TODO();
+  /*
+  uint32_t bno = file->size / BLK_SIZE;
+  //printf("no: %d\n", file->addrs[bno]);
+  blk_t* blk = iwalk(file, bno);
+  uint32_t boff = file->size % BLK_SIZE;
+  if(size < BLK_SIZE - boff){
+    memcpy(&blk->u8buf[boff], buf, size);
+    file->size += size;
+  }else{
+    memcpy(&blk->u8buf[boff], buf, BLK_SIZE - boff);
+    file->size += BLK_SIZE - boff;
+    iappend(file, buf + (BLK_SIZE - boff), size - (BLK_SIZE - boff));
+  }
+  */
+
+  uint32_t bno, boff;
+  blk_t* blk;
+  uint32_t canApp;
+  while(size > 0){
+    bno = file->size / BLK_SIZE;
+    boff = file->size % BLK_SIZE;
+    blk = iwalk(file, bno);
+    canApp = MIN(BLK_SIZE - boff, size);
+    memcpy(&blk->u8buf[boff], buf, canApp);
+    buf += canApp;
+    file->size += canApp;
+    size -= canApp;
+  }
 }
 
 void add_file(char *path) {
+  //printf("adding file\n");
   static uint8_t buf[BLK_SIZE];
   FILE *fp = fopen(path, "rb");
   if (!fp) panic("file not exist");
@@ -195,6 +242,13 @@ void add_file(char *path) {
   strcpy(dirent.name, basename(path));
   iappend(root, &dirent, sizeof dirent);
   // write the file's data, first read it to buf then call iappend
-  TODO();
+  // TODO(); eee
+  // printf("%s\n", dirent.name);
+  while(!feof(fp)){
+    size_t size = fread(buf, 1, BLK_SIZE, fp);
+    iappend(inode, buf, size);
+    //printf("size = %ld  ", size);
+  }
+  //printf("\n");
   fclose(fp);
 }
